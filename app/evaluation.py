@@ -1,5 +1,8 @@
 from typing import Any, TypedDict
 
+from math_tutor import MathTutor
+
+tutor = MathTutor('./configs/config_tutor.json')
 
 class Params(TypedDict):
     pass
@@ -7,7 +10,7 @@ class Params(TypedDict):
 
 class Result(TypedDict):
     is_correct: bool
-
+    feedback: str
 
 def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     """
@@ -32,5 +35,17 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     return types and that evaluation_function() is the main function used
     to output the evaluation response.
     """
+    
+    # We assume that response in our case contains the student's answer as well as the question
+    # We don't assume that we get an exemplary answer, but if `answer` is a string, we provide it to the tutor
 
-    return Result(is_correct=True)
+    assert isinstance(response, str)
+    
+    if isinstance(answer, str):
+        answer = f"Student submission: {response}\n\nExemplary solution: {answer}"
+    
+    feedback, correctness = tutor.process_input(response, answer)
+
+    return Result(is_correct=correctness, feedback=feedback)
+
+
