@@ -1,10 +1,9 @@
 import unittest
 
 try:
-    from .evaluation import Params, evaluation_function
+    from .evaluation import evaluation_function, Params
 except ImportError:
-    from evaluation import Params, evaluation_function
-
+    from evaluation import evaluation_function, Params
 
 class TestEvaluationFunction(unittest.TestCase):
     """
@@ -25,12 +24,43 @@ class TestEvaluationFunction(unittest.TestCase):
     as it should.
     """
 
-    def test_returns_is_correct_true(self):
-        response, answer, params = None, None, Params()
-        result = evaluation_function(response, answer, params)
+    def setUp(self):
+        self.params = Params({'model_name': 'gpt-4o-mini'})
 
-        self.assertEqual(result.get("is_correct"), True)
+    def test_invalid_submission_format(self):
+        submission = "This is not a valid submission format"
+        exemplary_solution = "Some solution"
+        
+        with self.assertRaises(ValueError):
+            evaluation_function(submission, exemplary_solution, self.params)
 
+    def test_correct_submission(self):
+        submission = "What is 2+2?#Answer: The answer is 4."
+        exemplary_solution = "The answer is 4."
+        
+        result = evaluation_function(submission, exemplary_solution, self.params)
+        self.assertTrue(result['is_correct'])
+
+    def test_incorrect_submission(self):
+        submission = "What is 2+2?#Answer: The answer is 5."
+        exemplary_solution = "The answer is 4."
+        
+        result = evaluation_function(submission, exemplary_solution, self.params)
+        self.assertFalse(result['is_correct'])
+
+    def test_no_exemplary_solution_correct(self):
+        submission = "What is 2+2?#Answer: The answer is 4."
+        exemplary_solution = "No exemplary solution provided"
+        
+        result = evaluation_function(submission, exemplary_solution, self.params)
+        self.assertTrue(result['is_correct'])
+
+    def test_no_exemplary_solution_incorrect(self):
+        submission = "What is 2+2?#Answer: The answer is 3."
+        exemplary_solution = "No exemplary solution provided"
+        
+        result = evaluation_function(submission, exemplary_solution, self.params)
+        self.assertFalse(result['is_correct'])
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,12 +1,11 @@
 from typing import Any, TypedDict
 
-from math_tutor import MathTutor
+from .math_tutor import MathTutor
 
-tutor = MathTutor('./configs/config_tutor.json')
+tutor = MathTutor('./app/configs/config_tutor.json')
 
 class Params(TypedDict):
-    pass
-
+    model_name: str
 
 class Result(TypedDict):
     is_correct: bool
@@ -19,7 +18,7 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     The handler function passes three arguments to evaluation_function():
 
     - `response` which are the answers provided by the student.
-    - `answer` which are the correct answers to compare against.
+    - `answer` which are the correct answers to compare against. Normally, we won't have those in our application.
     - `params` which are any extra parameters that may be useful,
         e.g., error tolerances.
 
@@ -41,10 +40,12 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
 
     assert isinstance(response, str)
     
-    if isinstance(answer, str):
-        answer = f"Student submission: {response}\n\nExemplary solution: {answer}"
+    if not isinstance(answer, str):
+        answer = f"No exemplary solution provided"
     
     feedback, correctness = tutor.process_input(response, answer)
+
+    correctness = (correctness.lower() == "correct")
 
     return Result(is_correct=correctness, feedback=feedback)
 
