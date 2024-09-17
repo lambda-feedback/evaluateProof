@@ -2,7 +2,7 @@ from typing import Any, TypedDict
 
 from .math_tutor import MathTutor
 
-tutor = MathTutor('./app/configs/config_tutor.json')
+tutor = MathTutor('./configs/config_tutor.json')
 
 class Params(TypedDict):
     model_name: str
