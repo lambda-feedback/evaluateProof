@@ -48,11 +48,11 @@ jobs:
 
       - name: Test Evaluation Function
         run: |
-          pytest -v evaluation_tests.py::TestEvaluationFunction
+          pytest -v app/evaluation_tests.py::TestEvaluationFunction
 
       - name: Test Preview Function
         run: |
-          pytest -v preview_tests.py::TestPreviewFunction
+          pytest -v app/preview_tests.py::TestPreviewFunction
 
   deploy-staging:
     name: Deploy Staging
