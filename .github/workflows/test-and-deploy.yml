@@ -47,8 +47,6 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Test Evaluation Function
-        env: 
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           pytest -v evaluation_tests.py::TestEvaluationFunction
 
