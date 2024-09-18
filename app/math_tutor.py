@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
-openai_api_key_var = "OPEN_API_KEY"
+openai_api_key_var = "OPENAI_API_KEY"
 
 class MathTutor:
     def __init__(self, config_path: str, env_path: str = '.env'):
