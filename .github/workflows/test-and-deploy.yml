@@ -48,7 +48,7 @@ jobs:
 
       - name: Test Evaluation Function
         run: |
-          pytest -v app/evaluation_tests.py::TestEvaluationFunction
+          pytest -v evaluation_tests.py::TestEvaluationFunction
 
       - name: Test Preview Function
         run: |
