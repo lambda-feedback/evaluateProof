@@ -4,11 +4,13 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
+openai_api_key_var = "OPEN_API_KEY"
+
 class MathTutor:
     def __init__(self, config_path: str, env_path: str = '.env'):
         self.config = self._load_config(config_path)
         self._load_environment(env_path)
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = OpenAI(api_key=os.getenv(openai_api_key_var))
         # At initialization, we verify that the config directives contain the necessary keys
         if not all(key in self.config['directives'] for key in ['feedback', 'correctness']):
             raise ValueError("Config directives must contain keys 'feedback' and 'correctness'")
@@ -19,7 +21,7 @@ class MathTutor:
 
     def _load_environment(self, env_path: str):
         load_dotenv(env_path)
-        required_env_vars = ["OPENAI_API_KEY"]
+        required_env_vars = [openai_api_key_var]
         for var in required_env_vars:
             if not os.getenv(var):
                 raise ValueError(f"Missing required environment variable: {var}")
