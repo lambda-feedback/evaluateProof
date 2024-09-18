@@ -54,7 +54,7 @@ jobs:
 
       - name: Test Preview Function
         run: |
-          pytest -v app/preview_tests.py::TestPreviewFunction
+          pytest -v preview_tests.py::TestPreviewFunction
 
   deploy-staging:
     name: Deploy Staging
