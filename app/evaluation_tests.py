@@ -30,9 +30,13 @@ class TestEvaluationFunction(unittest.TestCase):
     def test_invalid_submission_format(self):
         submission = "This is not a valid submission format"
         exemplary_solution = "Some solution"
+
+        result = evaluation_function(submission, exemplary_solution, self.params)
+        self.assertFalse(result['is_correct'])
+        self.assertIn("Submission must contain", result['feedback'])
         
-        with self.assertRaises(ValueError):
-            evaluation_function(submission, exemplary_solution, self.params)
+        #with self.assertRaises(ValueError):
+        #    evaluation_function(submission, exemplary_solution, self.params)
 
     def test_correct_submission(self):
         submission = "What is 2+2?#Answer: The answer is 4."
