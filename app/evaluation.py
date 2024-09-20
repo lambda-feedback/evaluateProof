@@ -1,5 +1,7 @@
 from logging import error
 
+from sys import exit
+
 from typing import Any, TypedDict
 
 from .math_tutor import MathTutor
@@ -13,8 +15,8 @@ except Exception as e:
     except Exception as e:
         error(f"An error occurred during the initialization of the tutor: {e}")
         # exit with suitable error code
-        return
-
+        exit(1)
+        
 class Params(TypedDict):
     model_name: str
 
