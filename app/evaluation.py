@@ -60,7 +60,7 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
         feedback, correctness = tutor.process_input(response, answer)
     except Exception as e:
         feedback = f"An error occurred during the evaluation: {e}"
-        correctness = False
+        correctness = "incorrect"
 
     correctness = (correctness.lower() == "correct")
 
