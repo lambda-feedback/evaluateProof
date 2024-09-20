@@ -12,6 +12,10 @@ RUN pip3 install -r requirements.txt
 COPY evaluation.py ./app/
 COPY evaluation_tests.py ./app/
 
+COPY config_tutor.json ./app/
+
+COPY math_tutor.py ./app/
+
 # Copy the preview and testing scripts
 COPY preview.py ./app/
 COPY preview_tests.py ./app/
