@@ -1,8 +1,19 @@
+from logging import error
+
 from typing import Any, TypedDict
 
 from .math_tutor import MathTutor
 
-tutor = MathTutor('config_tutor.json')
+try:
+    tutor = MathTutor('config_tutor.json')
+except Exception as e:
+    error(f"An error occurred during the initialization of the tutor: {e}")
+    try:
+        tutor = MathTutor('app/config_tutor.json')
+    except Exception as e:
+        error(f"An error occurred during the initialization of the tutor: {e}")
+        # exit with suitable error code
+        return
 
 class Params(TypedDict):
     model_name: str
@@ -43,7 +54,11 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     if not isinstance(answer, str):
         answer = f"No exemplary solution provided"
     
-    feedback, correctness = tutor.process_input(response, answer)
+    try:
+        feedback, correctness = tutor.process_input(response, answer)
+    except Exception as e:
+        feedback = f"An error occurred during the evaluation: {e}"
+        correctness = False
 
     correctness = (correctness.lower() == "correct")
 
