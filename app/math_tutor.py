@@ -28,7 +28,7 @@ class MathTutor:
             if not os.getenv(var):
                 raise ValueError(f"Missing required environment variable: {var}")
 
-    def process_input(self, submission: str, exemplary_solution: str, temperature: float = 0.0) -> Tuple[str, str]:
+    def process_input(self, submission: str, exemplary_solution: str, temperature: float = 0.0, model: str = None) -> Tuple[str, str]:
         """
         process_input takes a submission (question and associated answer) and an exemplary solution (can be "No exemplary solution provided") and returns feedback and assessed correctness.
         :param submission: The student's submission, which includes the question and the answer.
@@ -41,7 +41,7 @@ class MathTutor:
         except ValueError:
             raise ValueError("Submission must contain the question and the answer separated by '#Answer:'")
         assignment_data = (question, answer, exemplary_solution)
-        _, state = self._process_directives(assignment_data, self.config['directives'], temperature)
+        _, state = self._process_directives(assignment_data, self.config['directives'], temperature, model)
         return state['feedback'], state['correctness']
 
     def _get_assignment_data(self, text: str) -> str:
@@ -61,15 +61,15 @@ class MathTutor:
                 continue
             if directive is not None:
                 prompt = directive.format(**state)
-                response = self._get_completion(prompt, temperature)
+                response = self._get_completion(prompt, temperature, model)
                 state[key] = response
 
         return state['feedback'], state
 
-    def _get_completion(self, prompt: str, temperature: float) -> str:
+    def _get_completion(self, prompt: str, temperature: float, model: str = None) -> str:
         sys_message = self.config['context_instructions']
         response = self.client.chat.completions.create(
-            model=self.config.get('model_name', 'gpt-4o-mini'),
+            model = model if model is not None else self.config.get('model_name', 'gpt-4o-mini'),
             messages=[
                 {"role": "system", "content": sys_message},
                 {"role": "user", "content": prompt}
