@@ -57,7 +57,7 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
         answer = f"No exemplary solution provided"
     
     try:
-        feedback, correctness = tutor.process_input(response, answer)
+        feedback, correctness = tutor.process_input(response, answer, model=params['model_name'])
     except Exception as e:
         feedback = f"An error occurred during the evaluation: {e}"
         correctness = "incorrect"

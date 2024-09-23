@@ -7,8 +7,10 @@ from openai import OpenAI
 openai_api_key_var = "OPENAI_API_KEY"
 
 class MathTutor:
-    def __init__(self, config_path: str, env_path: str = '.env'):
+    def __init__(self, config_path: str, env_path: str = '.env', model=None):
         self.config = self._load_config(config_path)
+        if model is not None:
+            self.config['model_name'] = model
         self._load_environment(env_path)
         self.client = OpenAI(api_key=os.getenv(openai_api_key_var))
         # At initialization, we verify that the config directives contain the necessary keys
