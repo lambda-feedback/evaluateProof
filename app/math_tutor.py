@@ -47,7 +47,7 @@ class MathTutor:
     def _get_assignment_data(self, text: str) -> str:
         return f"{self.config['context_instructions']}{text}"
 
-    def _process_directives(self, assignment_data: Tuple[str, str], directives: Dict, temperature: float) -> Tuple[str, Dict]:
+    def _process_directives(self, assignment_data: Tuple[str, str], directives: Dict, temperature: float, model: str = None) -> Tuple[str, Dict]:
         state = {
             "prompt": assignment_data[0],
             "output": assignment_data[1],
