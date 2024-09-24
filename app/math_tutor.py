@@ -55,15 +55,29 @@ class MathTutor:
         }
         state.update(self.config.get('variables', {}))
 
+        print(f"Directives steps: {directives.keys()}")
+        print(f"Number of directives: {len(directives.items())}")
+
         for key, directive in directives.items():
             if key == 'auto_solution' and state['solution'] != "No exemplary solution provided":
                 state[key] = state['solution']
                 continue
             if directive is not None:
-                prompt = directive.format(**state)
+                try:
+                    prompt = directive.format(**state)
+                except Exception as e:
+                    print(f"Error formatting directive: {e}")
+                    raise e
+                # print(f"Prompt: {prompt}")
                 response = self._get_completion(prompt, temperature, model)
                 state[key] = response
-
+            # print(f"State after step {key}: {state}")
+            # We print the prompt and response for debugging purposes
+            # print(f"Prompt: {prompt}")
+            #print(f"Response: {response}")
+            print(f"Step being run: {key}")
+        print(f"Correctness: {state['correctness']}")
+            # print(f"Directive being run: {directive}")
         return state['feedback'], state
 
     def _get_completion(self, prompt: str, temperature: float, model: str = None) -> str:
