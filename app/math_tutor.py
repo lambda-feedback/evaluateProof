@@ -37,9 +37,9 @@ class MathTutor:
         :return: A tuple containing the feedback and correctness of the submission.
         """
         try:
-            question, answer = submission.split("#Answer:")
+            question, answer = submission.split("Answer:")
         except ValueError:
-            raise ValueError("Submission must contain the question and the answer separated by '#Answer:'")
+            raise ValueError("Submission must contain the question and the answer separated by 'Answer:'.")
         assignment_data = (question, answer, exemplary_solution)
         _, state = self._process_directives(assignment_data, self.config['directives'], temperature, model)
         return state['feedback'], state['correctness']
