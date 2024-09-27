@@ -45,7 +45,16 @@ class MathTutor:
         try:
             question, answer = submission.split("Answer:")
         except ValueError:
-            raise ValueError(f"Submission must contain the question and the answer separated by 'Answer:'. Submission: {submission}")
+            # try to split by Answer:, but into a list, and use the first element as the question and reconstitute the rest as answer
+            try:
+                split_submission = submission.split("Answer:")
+                if len(split_submission) > 1:
+                    question = split_submission[0]
+                    answer = "Answer:".join(split_submission[1:])
+                else:
+                    raise ValueError(f"Submission must contain the question and the answer separated by 'Answer:'.")
+            except ValueError:
+                raise ValueError(f"Submission must contain the question and the answer separated by 'Answer:'.")
         # Check submission length
         if len(submission) > 5000:
             return "I apologize, but your submission is too long. Please limit your submission to 5000 characters or less.", "incorrect"
