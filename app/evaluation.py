@@ -55,6 +55,14 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     
     if not isinstance(answer, str):
         answer = f"No exemplary solution provided"
+    else:
+        try:
+            question, answer = answer.split("Answer:")
+            answer = answer.strip()
+            question = question.strip()
+            response = f"Question: {question}\n\nAnswer: {response}"
+        except ValueError:
+            answer = f"No exemplary solution provided"
     
     try:
         feedback, correctness = tutor.process_input(response, answer, model=params['model_name'])

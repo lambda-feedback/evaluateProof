@@ -41,10 +41,38 @@ class MathTutor:
         :param temperature: The temperature parameter for the LLM that checks the solution.
         :return: A tuple containing the feedback and correctness of the submission.
         """
+
         try:
             question, answer = submission.split("Answer:")
         except ValueError:
             raise ValueError("Submission must contain the question and the answer separated by 'Answer:'.")
+        # Check submission length
+        if len(submission) > 5000:
+            return "I apologize, but your submission is too long. Please limit your submission to 5000 characters or less.", "incorrect"
+
+        # Call OpenAI moderation endpoint
+        moderation_response = self.client.moderations.create(input=submission)
+        if moderation_response.results[0].flagged:
+            return "I apologize, but I cannot process this submission as it contains content that has been flagged as inappropriate. Please revise your submission and try again.", "incorrect"
+
+        # Check if it's a mathematical question using gpt-4-mini
+        math_check_response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a classifier that determines if a given text contains a mathematical question and answer. Respond only with 'Yes' or 'No'."},
+                {"role": "user", "content": submission}
+            ],
+            temperature=0.0
+        )
+        math_check_response = math_check_response.choices[0].message.content.strip().lower()
+        print(f"Math check response: {math_check_response}")
+        is_math_question = math_check_response == 'yes'
+        if not is_math_question:
+            return "I'm sorry, but your submission doesn't appear to contain a mathematical question. Could you please rephrase your question to focus on a mathematical topic?", "incorrect"
+
+        # Update token counts
+        # self.tokens_processed += math_check_response.usage.total_tokens
+        # self.tokens_processed += moderation_response.usage.total_tokens
         assignment_data = (question, answer, exemplary_solution)
         _, state = self._process_directives(assignment_data, self.config['directives'], temperature, model)
         return state['feedback'], state['correctness']
