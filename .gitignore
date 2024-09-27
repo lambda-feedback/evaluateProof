@@ -130,3 +130,14 @@ dmypy.json
 
 # VSCode configuration
 .vscode
+
+# Test script outputs and inputs
+app/test_outputs/
+app/test_inputs/
+app/test_logs/
+
+# test script
+app/test_script.py
+
+# alternative config files
+app/config_alt.json

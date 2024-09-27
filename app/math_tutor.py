@@ -13,6 +13,8 @@ class MathTutor:
             self.config['model_name'] = model
         self._load_environment(env_path)
         self.client = OpenAI(api_key=os.getenv(openai_api_key_var))
+        self.tokens_processed = 0
+        self.tokens_emitted = 0
         # At initialization, we verify that the config directives contain the necessary keys
         if not all(key in self.config['directives'] for key in ['feedback', 'correctness']):
             raise ValueError("Config directives must contain keys 'feedback' and 'correctness'")
@@ -27,6 +29,9 @@ class MathTutor:
         for var in required_env_vars:
             if not os.getenv(var):
                 raise ValueError(f"Missing required environment variable: {var}")
+            
+    def get_num_tokens(self):
+        return self.tokens_processed, self.tokens_emitted
 
     def process_input(self, submission: str, exemplary_solution: str, temperature: float = 0.0, model: str = None) -> Tuple[str, str]:
         """
@@ -48,6 +53,10 @@ class MathTutor:
         return f"{self.config['context_instructions']}{text}"
 
     def _process_directives(self, assignment_data: Tuple[str, str], directives: Dict, temperature: float, model: str = None) -> Tuple[str, Dict]:
+        if model and "__testmode__" in model:
+            model, evaluator = model.split("__testmode__")
+        else:
+            evaluator = None
         state = {
             "prompt": assignment_data[0],
             "output": assignment_data[1],
@@ -77,19 +86,38 @@ class MathTutor:
             #print(f"Response: {response}")
             print(f"Step being run: {key}")
         print(f"Correctness: {state['correctness']}")
-            # print(f"Directive being run: {directive}")
+        if evaluator:
+            evaluator_prompt = f"Here is a mathematical homework assignment and the solution submitted by a student:\n\n{state['prompt']}\n\n{state['output']}\n\nHere is feedback given by a teaching assistant:\n\n{state['feedback']}\n\nPlease perform a meta-evaluation of the feedback given to the student. Highlight errors, weaknesses, and strengths of the feedback provided."
+            evaluator_response = self.client.chat.completions.create(
+                model=evaluator,
+                messages =[
+                    {"role": "user", "content": evaluator_prompt}
+                ]
+            )
+            meta_feedback = evaluator_response.choices[0].message.content
+            state['feedback'] = state['feedback'] + "\n\nMeta-evaluation of the feedback:\n\n" + meta_feedback
         return state['feedback'], state
 
     def _get_completion(self, prompt: str, temperature: float, model: str = None) -> str:
         sys_message = self.config['context_instructions']
-        response = self.client.chat.completions.create(
-            model = model if model is not None else self.config.get('model_name', 'gpt-4o-mini'),
-            messages=[
-                {"role": "system", "content": sys_message},
+        if model == 'o1-mini':
+            response = self.client.chat.completions.create(
+                model='o1-mini',
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+        else:
+            response = self.client.chat.completions.create(
+                model = model if model is not None else self.config.get('model_name', 'gpt-4o-mini'),
+                messages=[
+                    {"role": "system", "content": sys_message},
                 {"role": "user", "content": prompt}
             ],
             temperature=temperature
         )
+        self.tokens_processed += response.usage.prompt_tokens
+        self.tokens_emitted += response.usage.completion_tokens
         return response.choices[0].message.content
 
     def process_batch(self, data: List[Dict], temperature: float = 0.0) -> List[Tuple[str, str]]:

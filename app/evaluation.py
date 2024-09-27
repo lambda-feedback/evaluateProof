@@ -64,6 +64,8 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
 
     correctness = (correctness.lower() == "correct")
 
+    feedback = f"Feedback: {feedback}, Correctness: {correctness}, Answer: {answer}"
+
     return Result(is_correct=correctness, feedback=feedback)
 
 
