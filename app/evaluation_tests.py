@@ -29,25 +29,33 @@ class TestEvaluationFunction(unittest.TestCase):
 
     def test_invalid_submission_format(self):
         submission = "This is not a valid submission format"
-        exemplary_solution = "Some solution"
+        exemplary_solution = 'Some solution'
 
         result = evaluation_function(submission, exemplary_solution, self.params)
         self.assertFalse(result['is_correct'])
-        self.assertIn("Submission must contain", result['feedback'])
+        self.assertIn("Submissions that are provided without an exemplary answer must be formatted as a question and answer separated by 'Answer:'.", result['feedback'])
         
         #with self.assertRaises(ValueError):
         #    evaluation_function(submission, exemplary_solution, self.params)
 
     def test_correct_submission(self):
         submission = "What is 2+2?#Answer: The answer is 4."
-        exemplary_solution = "The answer is 4."
+        exemplary_solution = "Question: What is 2+2? Answer: The answer is 4."
         
         result = evaluation_function(submission, exemplary_solution, self.params)
         self.assertTrue(result['is_correct'])
 
+    def test_correct_submission_json_exemplary(self):
+        submission = "The answer is 4."
+        exemplary_solution = '{"question": "What is 2+2?", "answer": "The answer is 4."}'
+
+        result = evaluation_function(submission, exemplary_solution, self.params)
+        self.assertTrue(result['is_correct'])
+
+
     def test_incorrect_submission(self):
         submission = "What is 2+2?#Answer: The answer is 5."
-        exemplary_solution = "The answer is 4."
+        exemplary_solution = "Question: What is 2+2? Answer: The answer is 4."
         
         result = evaluation_function(submission, exemplary_solution, self.params)
         self.assertFalse(result['is_correct'])

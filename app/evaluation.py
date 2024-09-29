@@ -6,6 +6,8 @@ from typing import Any, TypedDict
 
 from .math_tutor import MathTutor
 
+import json
+
 try:
     tutor = MathTutor('config_tutor.json')
 except Exception as e:
@@ -57,10 +59,10 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
         answer = f"No exemplary solution provided"
     else:
         try:
-            question, answer = answer.split("Answer:")
-            answer = answer.strip()
-            question = question.strip()
-            response = f"Question: {question}\n\nAnswer: {response}"
+            # we expect `answer` to be a json string containing the question and an exemplary solution
+            json_answer = json.loads(answer)
+            question = json_answer["question"]
+            solution = json_answer["answer"]
         except ValueError:
             answer = f"No exemplary solution provided"
     
@@ -72,7 +74,8 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
 
     correctness = (correctness.lower() == "correct")
 
-    feedback = f"Feedback: {feedback}, Correctness: {correctness}, Answer: {answer}"
+    # feedback = f"Feedback: {feedback}, Correctness: {correctness}, Answer: {answer}"
+    print(f"Feedback: {feedback}, Correctness: {correctness}, Answer: {answer}")
 
     return Result(is_correct=correctness, feedback=feedback)
 

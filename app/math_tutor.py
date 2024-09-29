@@ -36,25 +36,35 @@ class MathTutor:
     def process_input(self, submission: str, exemplary_solution: str, temperature: float = 0.0, model: str = None) -> Tuple[str, str]:
         """
         process_input takes a submission (question and associated answer) and an exemplary solution (can be "No exemplary solution provided") and returns feedback and assessed correctness.
+        :param question: The question to be answered.
         :param submission: The student's submission, which includes the question and the answer.
         :param exemplary_solution: The exemplary solution to the question.
         :param temperature: The temperature parameter for the LLM that checks the solution.
         :return: A tuple containing the feedback and correctness of the submission.
         """
+        print(f"Exemplary solution: {exemplary_solution}")
+        print(f"Submission: {submission}")
 
         try:
-            question, answer = submission.split("Answer:")
+            # try to parse the exemplary solution as a json string
+            exemplary_solution = json.loads(exemplary_solution)
+            question = exemplary_solution["question"]
+            exemplary_solution = exemplary_solution["answer"]
+            answer = submission
         except ValueError:
-            # try to split by Answer:, but into a list, and use the first element as the question and reconstitute the rest as answer
+            # in this case, we assume that the exemplary solution is a string that contains just the exemplary answer, or maybe nothing (i.e. `No exemplary solution provided`)
+            # In this case, we try to split the submission into question and answer
             try:
                 split_submission = submission.split("Answer:")
+                print(f"Split submission: {split_submission}")
                 if len(split_submission) > 1:
                     question = split_submission[0]
                     answer = "Answer:".join(split_submission[1:])
                 else:
-                    raise ValueError(f"Submission must contain the question and the answer separated by 'Answer:'.")
+                    print("VALUE_ERROR")
+                    raise ValueError(f"Submissions that are provided without an exemplary answer must be formatted as a question and answer separated by 'Answer:'.")
             except ValueError:
-                raise ValueError(f"Submission must contain the question and the answer separated by 'Answer:'.")
+                raise ValueError(f"Submissions that are provided without an exemplary answer must be formatted as a question and answer separated by 'Answer:'.")
         # Check submission length
         if len(submission) > 5000:
             return "I apologize, but your submission is too long. Please limit your submission to 5000 characters or less.", "incorrect"
@@ -65,10 +75,11 @@ class MathTutor:
             return "I apologize, but I cannot process this submission as it contains content that has been flagged as inappropriate. Please revise your submission and try again.", "incorrect"
 
         # Check if it's a mathematical question using gpt-4-mini
+        print(f"Checking submission for math content...: {submission}")
         math_check_response = self.client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a classifier that determines if a given text contains a mathematical question and answer. Respond only with 'Yes' or 'No'."},
+                {"role": "system", "content": "You are a classifier that determines if a given text contains a statement that contains mathematical content. Respond only with 'Yes' or 'No'."},
                 {"role": "user", "content": submission}
             ],
             temperature=0.0
@@ -89,7 +100,7 @@ class MathTutor:
     def _get_assignment_data(self, text: str) -> str:
         return f"{self.config['context_instructions']}{text}"
 
-    def _process_directives(self, assignment_data: Tuple[str, str], directives: Dict, temperature: float, model: str = None) -> Tuple[str, Dict]:
+    def _process_directives(self, assignment_data: Tuple[str, str, str], directives: Dict, temperature: float, model: str = None) -> Tuple[str, Dict]:
         if model and "__testmode__" in model:
             model, evaluator = model.split("__testmode__")
         else:
@@ -99,6 +110,7 @@ class MathTutor:
             "output": assignment_data[1],
             "solution": assignment_data[2]
         }
+        print(f"State: {state}")
         state.update(self.config.get('variables', {}))
 
         print(f"Directives steps: {directives.keys()}")
@@ -108,13 +120,12 @@ class MathTutor:
             if key == 'auto_solution' and state['solution'] != "No exemplary solution provided":
                 state[key] = state['solution']
                 continue
-            if directive is not None:
+            if isinstance(directive, str):
                 try:
                     prompt = directive.format(**state)
                 except Exception as e:
                     print(f"Error formatting directive: {e}")
                     raise e
-                # print(f"Prompt: {prompt}")
                 response = self._get_completion(prompt, temperature, model)
                 state[key] = response
             # print(f"State after step {key}: {state}")
