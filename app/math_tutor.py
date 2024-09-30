@@ -75,12 +75,13 @@ class MathTutor:
             return "I apologize, but I cannot process this submission as it contains content that has been flagged as inappropriate. Please revise your submission and try again.", "incorrect"
 
         # Check if it's a mathematical question using gpt-4-mini
+        math_check_submission = f"Question: {question}\nSubmission: {submission}"
         print(f"Checking submission for math content...: {submission}")
         math_check_response = self.client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a classifier that determines if a given text contains a statement that contains mathematical content. Respond only with 'Yes' or 'No'."},
-                {"role": "user", "content": submission}
+                {"role": "user", "content": math_check_submission}
             ],
             temperature=0.0
         )
@@ -88,7 +89,7 @@ class MathTutor:
         print(f"Math check response: {math_check_response}")
         is_math_question = math_check_response == 'yes'
         if not is_math_question:
-            return "I'm sorry, but your submission doesn't appear to contain a mathematical question. Could you please rephrase your question to focus on a mathematical topic?", "incorrect"
+            return f"I'm sorry, but your submission doesn't appear to contain a mathematical question. Could you please rephrase your question to focus on a mathematical topic? Here is the submission:{submission}", "incorrect"
 
         # Update token counts
         # self.tokens_processed += math_check_response.usage.total_tokens

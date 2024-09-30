@@ -138,6 +138,7 @@ app/test_logs/
 
 # test script
 app/test_script.py
+app/question_conversion.py
 
 # alternative config files
 app/config_alt.json
