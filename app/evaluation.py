@@ -21,6 +21,7 @@ except Exception as e:
         
 class Params(TypedDict):
     model_name: str
+    submission_context: dict
 
 class Result(TypedDict):
     is_correct: bool
