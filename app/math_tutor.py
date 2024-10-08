@@ -16,8 +16,8 @@ class MathTutor:
         self.tokens_processed = 0
         self.tokens_emitted = 0
         # At initialization, we verify that the config directives contain the necessary keys
-        if not all(key in self.config['directives'] for key in ['feedback', 'correctness']):
-            raise ValueError("Config directives must contain keys 'feedback' and 'correctness'")
+        # if not all(key in self.config['directives'] for key in ['feedback', 'correctness']):
+        #    raise ValueError("Config directives must contain keys 'feedback' and 'correctness'")
 
     def _load_config(self, config_path: str) -> Dict:
         with open(config_path, 'r') as f:
@@ -96,7 +96,9 @@ class MathTutor:
         # self.tokens_processed += moderation_response.usage.total_tokens
         assignment_data = (question, answer, exemplary_solution)
         _, state = self._process_directives(assignment_data, self.config['directives'], temperature, model)
-        return state['feedback'], state['correctness']
+        # correctness no longer mandatory
+        correctness = state.get('correctness', 'incorrect')
+        return state['feedback'], correctness
 
     def _get_assignment_data(self, text: str) -> str:
         return f"{self.config['context_instructions']}{text}"
@@ -134,7 +136,7 @@ class MathTutor:
             # print(f"Prompt: {prompt}")
             #print(f"Response: {response}")
             print(f"Step being run: {key}")
-        print(f"Correctness: {state['correctness']}")
+        # print(f"Correctness: {state['correctness']}")
         if evaluator:
             evaluator_prompt = f"Here is a mathematical homework assignment and the solution submitted by a student:\n\n{state['prompt']}\n\n{state['output']}\n\nHere is feedback given by a teaching assistant:\n\n{state['feedback']}\n\nPlease perform a meta-evaluation of the feedback given to the student. Highlight errors, weaknesses, and strengths of the feedback provided."
             evaluator_response = self.client.chat.completions.create(
@@ -161,8 +163,8 @@ class MathTutor:
                 model = model if model is not None else self.config.get('model_name', 'gpt-4o-mini'),
                 messages=[
                     {"role": "system", "content": sys_message},
-                {"role": "user", "content": prompt}
-            ],
+                    {"role": "user", "content": prompt}
+                ],
             temperature=temperature
         )
         self.tokens_processed += response.usage.prompt_tokens

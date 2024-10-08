@@ -135,11 +135,13 @@ dmypy.json
 app/test_outputs/
 app/test_inputs/
 app/test_logs/
+app/feedback_evals/
 
 # test script
 app/test_script.py
 app/question_conversion.py
 app/config_evaluator.py
+app/feedback_comparator.py
 
 # alternative config files
 app/config_alt.json

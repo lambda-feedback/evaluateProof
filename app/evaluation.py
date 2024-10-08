@@ -26,6 +26,8 @@ class Result(TypedDict):
     is_correct: bool
     feedback: str
 
+max_submissions_per_student_per_response_area = 300
+
 def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     """
     Function used to evaluate a student response.
@@ -36,6 +38,14 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     - `answer` which are the correct answers to compare against. Normally, we won't have those in our application.
     - `params` which are any extra parameters that may be useful,
         e.g., error tolerances.
+
+    The `params` dictionary now includes a 'submission_context' key with the following structure:
+    {
+        'submission_context': {
+            'submissions_per_student_per_response_area': int
+        }
+    }
+    This can be used to limit student usage or provide feedback based on the number of submissions.
 
     The output of this function is what is returned as the API response
     and therefore must be JSON-encodable. It must also conform to the
@@ -49,6 +59,21 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     return types and that evaluation_function() is the main function used
     to output the evaluation response.
     """
+    feedback_prefix = ""
+
+    # get the number of submissions per student per response area
+    try:
+        submissions_per_student_per_response_area = params['submission_context']['submissions_per_student_per_response_area']
+        if submissions_per_student_per_response_area >= max_submissions_per_student_per_response_area:
+            feedback = f"You have reached the maximum number of submissions per student per response area. Please contact the administrator if you believe this is an error."
+            correctness = "incorrect"
+            return Result(is_correct=correctness, feedback=feedback)
+        else:
+            feedback_prefix = f"You have submitted {submissions_per_student_per_response_area} times. You have {max_submissions_per_student_per_response_area - submissions_per_student_per_response_area} submissions remaining.\n\n"
+
+    except KeyError:
+        # for the moment, pass in case this is not provided; otherwise we break test cases
+        pass
     
     # We assume that response in our case contains the student's answer as well as the question
     # We don't assume that we get an exemplary answer, but if `answer` is a string, we provide it to the tutor
@@ -73,6 +98,8 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
         correctness = "incorrect"
 
     correctness = (correctness.lower() == "correct")
+
+    feedback = feedback_prefix + feedback
 
     # feedback = f"Feedback: {feedback}, Correctness: {correctness}, Answer: {answer}"
     print(f"Feedback: {feedback}, Correctness: {correctness}, Answer: {answer}")
