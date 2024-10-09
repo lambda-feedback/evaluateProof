@@ -70,7 +70,7 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
             correctness = "incorrect"
             return Result(is_correct=correctness, feedback=feedback)
         else:
-            feedback_prefix = f"You have submitted {submissions_per_student_per_response_area} times. You have {max_submissions_per_student_per_response_area - submissions_per_student_per_response_area} submissions remaining.\n\n"
+            feedback_prefix = f"You have submitted {submissions_per_student_per_response_area+1} times. You have {max_submissions_per_student_per_response_area - submissions_per_student_per_response_area - 1} submissions remaining.\n\n"
 
     except KeyError:
         # for the moment, pass in case this is not provided; otherwise we break test cases
