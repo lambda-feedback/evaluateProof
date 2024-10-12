@@ -25,6 +25,7 @@ class Params(TypedDict):
 
 class Result(TypedDict):
     feedback: str
+    is_correct: bool
 
 max_submissions_per_student_per_response_area = 300
 
@@ -97,6 +98,6 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
         feedback = f"An error occurred during the evaluation: {e}"
 
     feedback = feedback_prefix + feedback
-    return Result(feedback=feedback)
+    return Result(feedback=feedback, is_correct=False)
 
 
