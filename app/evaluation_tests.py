@@ -38,8 +38,8 @@ class TestEvaluationFunction(unittest.TestCase):
         """
         This is a helper function for the test that checks if, given the output of the evaluation function, the submission is correct or not.
         """
-        result_str = str(result)
-        prompt_correctness = f"Given this chain of thought, is the submission (given as `output`) a correct answer to the question (given as `prompt`)? Answer `yes` if it is, `no` otherwise:\n\n{result_str}"
+        result_str = result['feedback']
+        prompt_correctness = f"Given this feedback on a mathematical homework submission, is it reasonable to call the submission correct overall? Answer `yes` if it is, `no` otherwise:\n\n{result_str}"
         response_correctness = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt_correctness}],
