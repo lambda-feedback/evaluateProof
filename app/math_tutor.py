@@ -96,9 +96,8 @@ class MathTutor:
         # self.tokens_processed += moderation_response.usage.total_tokens
         assignment_data = (question, answer, exemplary_solution)
         _, state = self._process_directives(assignment_data, self.config['directives'], temperature, model)
-        # correctness no longer mandatory
-        correctness = state.get('correctness', 'incorrect')
-        return state['feedback'], correctness
+
+        return state['feedback']
 
     def _get_assignment_data(self, text: str) -> str:
         return f"{self.config['context_instructions']}{text}"

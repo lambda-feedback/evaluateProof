@@ -24,7 +24,6 @@ class Params(TypedDict):
     submission_context: dict
 
 class Result(TypedDict):
-    is_correct: bool
     feedback: str
 
 max_submissions_per_student_per_response_area = 300
@@ -93,18 +92,11 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
             answer = f"No exemplary solution provided"
     
     try:
-        feedback, correctness = tutor.process_input(response, answer, model=params['model_name'])
+        feedback = tutor.process_input(response, answer, model=params['model_name'])
     except Exception as e:
         feedback = f"An error occurred during the evaluation: {e}"
-        correctness = "incorrect"
-
-    correctness = (correctness.lower() == "correct")
 
     feedback = feedback_prefix + feedback
-
-    # feedback = f"Feedback: {feedback}, Correctness: {correctness}, Answer: {answer}"
-    print(f"Feedback: {feedback}, Correctness: {correctness}, Answer: {answer}")
-
-    return Result(is_correct=correctness, feedback=feedback)
+    return Result(feedback=feedback)
 
 

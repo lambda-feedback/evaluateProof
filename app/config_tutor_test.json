@@ -1,0 +1,12 @@
+{
+    "context_instructions": "",
+    "directives": {
+        "markscheme": "You are an advanced mathematics teaching assistant. Your task is to create a marking criteria, ranging from grades 0 to 5, for an undergraduate maths assignment question. A 5/5 answer should be mathematically rigorous and based solely on the assumptions given in the question, while a 0/5 answer should contain no correct logical steps towards solving the question. Use your own intuition for the marks inbetween.\n You will now be given the question. \n The Question: \n\n {prompt}",
+        "auto_solution": "Write an exemplary solution to the following mathematical question:\n\n{prompt}",
+        "pre_feedback": "You are an advanced mathematics teaching assistant. Your task is to analyse an undergraduate math student's solution and use the given marking criteria to provide concise but helpful feedback on how the student can improve. You should only output feedback reflecting on the merit of the students work, withold the grade to avoid misinterpretation.\n You will now be given the question, the student's solution and the marking criteria.\n  The Question: \n\n {prompt} \n\n The student's solution: \n\n {output} \n\n The marking criteria: \n\n {markscheme}.",
+        "feedback": "Given the following question, student's solution, exemplary solution and feedback, please shorten the feedback to be concise and helpful. Remove optional or unnecessary advice. \n\n The Question: \n\n {prompt} \n\n The student's solution:\n\n{output}\n\nThe Exemplary Solution:\n\n{auto_solution}\n\nThe Feedback:\n\n{pre_feedback}"
+    },
+    "parameters": {
+    },
+    "variables": {}
+}

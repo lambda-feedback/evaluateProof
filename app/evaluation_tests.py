@@ -1,4 +1,11 @@
 import unittest
+import openai
+import os
+import dotenv
+
+dotenv.load_dotenv()
+
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 try:
     from .evaluation import evaluation_function, Params
@@ -27,12 +34,29 @@ class TestEvaluationFunction(unittest.TestCase):
     def setUp(self):
         self.params = Params({'model_name': 'gpt-4o-mini'})
 
+    def correctness_test(self, result):
+        """
+        This is a helper function for the test that checks if, given the output of the evaluation function, the submission is correct or not.
+        """
+        result_str = str(result)
+        prompt_correctness = f"Given this chain of thought, is the submission (given as `output`) a correct answer to the question (given as `prompt`)? Answer `yes` if it is, `no` otherwise:\n\n{result_str}"
+        response_correctness = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt_correctness}],
+            temperature=0
+        )
+        return "yes" in response_correctness.choices[0].message.content.lower()
+
+
     def test_invalid_submission_format(self):
         submission = "This is not a valid submission format"
         exemplary_solution = 'Some solution'
 
         result = evaluation_function(submission, exemplary_solution, self.params)
-        self.assertFalse(result['is_correct'])
+        if 'is_correct' in result:
+            self.assertFalse(result['is_correct'])
+        else:
+            self.assertFalse(self.correctness_test(result))
         self.assertIn("Submissions that are provided without an exemplary answer must be formatted as a question and answer separated by 'Answer:'.", result['feedback'])
         
         #with self.assertRaises(ValueError):
@@ -43,14 +67,20 @@ class TestEvaluationFunction(unittest.TestCase):
         exemplary_solution = "Question: What is 2+2? Answer: The answer is 4."
         
         result = evaluation_function(submission, exemplary_solution, self.params)
-        self.assertTrue(result['is_correct'])
+        if 'is_correct' in result:
+            self.assertTrue(result['is_correct'])
+        else:
+            self.assertTrue(self.correctness_test(result))
 
     def test_correct_submission_json_exemplary(self):
         submission = "The answer is 4."
         exemplary_solution = '{"question": "What is 2+2?", "answer": "The answer is 4."}'
 
         result = evaluation_function(submission, exemplary_solution, self.params)
-        self.assertTrue(result['is_correct'])
+        if 'is_correct' in result:
+            self.assertTrue(result['is_correct'])
+        else:
+            self.assertTrue(self.correctness_test(result))
 
 
     def test_incorrect_submission(self):
@@ -58,21 +88,30 @@ class TestEvaluationFunction(unittest.TestCase):
         exemplary_solution = "Question: What is 2+2? Answer: The answer is 4."
         
         result = evaluation_function(submission, exemplary_solution, self.params)
-        self.assertFalse(result['is_correct'])
+        if 'is_correct' in result:
+            self.assertFalse(result['is_correct'])
+        else:
+            self.assertFalse(self.correctness_test(result))
 
     def test_no_exemplary_solution_correct(self):
         submission = "What is 2+2?#Answer: The answer is 4."
         exemplary_solution = "No exemplary solution provided"
         
         result = evaluation_function(submission, exemplary_solution, self.params)
-        self.assertTrue(result['is_correct'])
+        if 'is_correct' in result:
+            self.assertTrue(result['is_correct'])
+        else:
+            self.assertTrue(self.correctness_test(result))
 
     def test_no_exemplary_solution_incorrect(self):
         submission = "What is 2+2?#Answer: The answer is 3."
         exemplary_solution = "No exemplary solution provided"
         
         result = evaluation_function(submission, exemplary_solution, self.params)
-        self.assertFalse(result['is_correct'])
+        if 'is_correct' in result:
+            self.assertFalse(result['is_correct'])
+        else:
+            self.assertFalse(self.correctness_test(result))
 
 if __name__ == "__main__":
     unittest.main()
