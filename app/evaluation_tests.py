@@ -53,10 +53,7 @@ class TestEvaluationFunction(unittest.TestCase):
         exemplary_solution = 'Some solution'
 
         result = evaluation_function(submission, exemplary_solution, self.params)
-        if 'is_correct' in result:
-            self.assertFalse(result['is_correct'])
-        else:
-            self.assertFalse(self.correctness_test(result))
+        self.assertFalse(self.correctness_test(result))
         self.assertIn("Submissions that are provided without an exemplary answer must be formatted as a question and answer separated by 'Answer:'.", result['feedback'])
         
         #with self.assertRaises(ValueError):
@@ -67,20 +64,14 @@ class TestEvaluationFunction(unittest.TestCase):
         exemplary_solution = "Question: What is 2+2? Answer: The answer is 4."
         
         result = evaluation_function(submission, exemplary_solution, self.params)
-        if 'is_correct' in result:
-            self.assertTrue(result['is_correct'])
-        else:
-            self.assertTrue(self.correctness_test(result))
+        self.assertTrue(self.correctness_test(result))
 
     def test_correct_submission_json_exemplary(self):
         submission = "The answer is 4."
         exemplary_solution = '{"question": "What is 2+2?", "answer": "The answer is 4."}'
 
         result = evaluation_function(submission, exemplary_solution, self.params)
-        if 'is_correct' in result:
-            self.assertTrue(result['is_correct'])
-        else:
-            self.assertTrue(self.correctness_test(result))
+        self.assertTrue(self.correctness_test(result))
 
 
     def test_incorrect_submission(self):
@@ -88,30 +79,21 @@ class TestEvaluationFunction(unittest.TestCase):
         exemplary_solution = "Question: What is 2+2? Answer: The answer is 4."
         
         result = evaluation_function(submission, exemplary_solution, self.params)
-        if 'is_correct' in result:
-            self.assertFalse(result['is_correct'])
-        else:
-            self.assertFalse(self.correctness_test(result))
+        self.assertFalse(self.correctness_test(result))
 
     def test_no_exemplary_solution_correct(self):
         submission = "What is 2+2?#Answer: The answer is 4."
         exemplary_solution = "No exemplary solution provided"
         
         result = evaluation_function(submission, exemplary_solution, self.params)
-        if 'is_correct' in result:
-            self.assertTrue(result['is_correct'])
-        else:
-            self.assertTrue(self.correctness_test(result))
+        self.assertTrue(self.correctness_test(result))
 
     def test_no_exemplary_solution_incorrect(self):
         submission = "What is 2+2?#Answer: The answer is 3."
         exemplary_solution = "No exemplary solution provided"
         
         result = evaluation_function(submission, exemplary_solution, self.params)
-        if 'is_correct' in result:
-            self.assertFalse(result['is_correct'])
-        else:
-            self.assertFalse(self.correctness_test(result))
+        self.assertFalse(self.correctness_test(result))
 
 if __name__ == "__main__":
     unittest.main()
