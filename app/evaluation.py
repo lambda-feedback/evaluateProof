@@ -9,7 +9,7 @@ from .math_tutor import MathTutor
 import json
 
 try:
-    tutor = MathTutor('config_tutor.json')
+    tutor = MathTutor('config_tutor_test.json')
 except Exception as e:
     error(f"An error occurred during the initialization of the tutor: {e}")
     try:
