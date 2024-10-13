@@ -27,7 +27,7 @@ class Result(TypedDict):
     feedback: str
     is_correct: bool
 
-max_submissions_per_student_per_response_area = 300
+max_submissions_per_student_per_response_area = 6
 
 def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     """
