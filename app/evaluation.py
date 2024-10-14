@@ -66,9 +66,8 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     try:
         submissions_per_student_per_response_area = params['submission_context']['submissions_per_student_per_response_area']
         if submissions_per_student_per_response_area >= max_submissions_per_student_per_response_area:
-            feedback = f"You have reached the maximum number of submissions per student per response area. Please contact the administrator if you believe this is an error."
-            correctness = "incorrect"
-            return Result(is_correct=correctness, feedback=feedback)
+            feedback = f"You have reached the maximum number of submissions per student for this question. Please try another one. If you believe this is an error, please contact your instructor."
+            return Result(is_correct=False, feedback=feedback)
         else:
             feedback_prefix = f"You have submitted {submissions_per_student_per_response_area+1} times. You have {max_submissions_per_student_per_response_area - submissions_per_student_per_response_area - 1} submissions remaining.\n\n"
 

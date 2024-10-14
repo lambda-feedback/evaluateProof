@@ -86,6 +86,7 @@ class TestEvaluationFunction(unittest.TestCase):
         exemplary_solution = "No exemplary solution provided"
         
         result = evaluation_function(submission, exemplary_solution, self.params)
+        print(result)
         self.assertTrue(self.correctness_test(result))
 
     def test_no_exemplary_solution_incorrect(self):
