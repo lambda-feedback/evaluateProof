@@ -33,7 +33,7 @@ class MathTutor:
     def get_num_tokens(self):
         return self.tokens_processed, self.tokens_emitted
 
-    def process_input(self, submission: str, exemplary_solution: str, temperature: float = 0.0, model: str = None) -> str:
+    def process_input(self, submission: str, exemplary_solution: str, temperature: float = 0.0, model: str = None) -> Tuple[str, str]:
         """
         process_input takes a submission (question and associated answer) and an exemplary solution (can be "No exemplary solution provided") and returns feedback and assessed correctness.
         :param question: The question to be answered.
@@ -65,6 +65,9 @@ class MathTutor:
                     raise ValueError(f"Submissions that are provided without an exemplary answer must be formatted as a question and answer separated by 'Answer:'.")
             except ValueError:
                 raise ValueError(f"Submissions that are provided without an exemplary answer must be formatted as a question and answer separated by 'Answer:'.")
+        # Check submission length
+        if len(submission) > 5000:
+            return "I apologize, but your submission is too long. Please limit your submission to 5000 characters or less.", "incorrect"
 
         # Call OpenAI moderation endpoint
         moderation_response = self.client.moderations.create(input=submission)
