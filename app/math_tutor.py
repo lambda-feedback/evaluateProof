@@ -66,8 +66,8 @@ class MathTutor:
             except ValueError:
                 raise ValueError(f"Submissions that are provided without an exemplary answer must be formatted as a question and answer separated by 'Answer:'.")
         # Check submission length
-        if len(submission) > 5000:
-            return "I apologize, but your submission is too long. Please limit your submission to 5000 characters or less.", "incorrect"
+        # if len(submission) > 5000:
+        #    return "I apologize, but your submission is too long. Please limit your submission to 5000 characters or less.", "incorrect"
 
         # Call OpenAI moderation endpoint
         moderation_response = self.client.moderations.create(input=submission)
