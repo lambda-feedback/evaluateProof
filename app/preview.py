@@ -4,6 +4,9 @@ from typing import Any, TypedDict
 class Params(TypedDict):
     pass
 
+class Preview(TypedDict): 
+    latex: str
+    sympy: str
 
 class Result(TypedDict):
     preview: Any
@@ -29,4 +32,4 @@ def preview_function(response: Any, params: Params) -> Result:
     The way you wish to structure you code (all in this function, or
     split into many) is entirely up to you.
     """
-    return Result(preview=response)
+    return Result(preview=Preview(latex = response, sympy = response))
