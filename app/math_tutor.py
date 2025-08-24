@@ -69,8 +69,11 @@ class MathTutor:
         # if len(submission) > 5000:
         #    return "I apologize, but your submission is too long. Please limit your submission to 5000 characters or less.", "incorrect"
 
-        # Call OpenAI moderation endpoint
-        moderation_response = self.client.moderations.create(input=submission)
+        # Call OpenAI moderation endpoint with omni-moderation-latest model
+        moderation_response = self.client.moderations.create(
+            model="omni-moderation-latest",
+            input=submission
+        )
         if moderation_response.results[0].flagged:
             return "I apologize, but I cannot process this submission as it contains content that has been flagged as inappropriate. Please revise your submission and try again.", "incorrect"
 
