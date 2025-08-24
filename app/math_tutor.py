@@ -153,16 +153,22 @@ class MathTutor:
 
     def _get_completion(self, prompt: str, temperature: float, model: str = None) -> str:
         sys_message = self.config['context_instructions']
-        if model == 'o1-mini':
+        resolved_model = model if model is not None else self.config.get('model_name', 'gpt-5-mini')
+        
+        # Check if this is a reasoning model (o1, o3, o4, gpt-5 series)
+        is_reasoning_model = any(reasoning_prefix in resolved_model for reasoning_prefix in ['o1', 'o3', 'o4', 'gpt-5'])
+        
+        if is_reasoning_model:
+            # Reasoning models don't support system messages
             response = self.client.chat.completions.create(
-                model='o1-mini',
+                model=resolved_model,
                 messages=[
                     {"role": "user", "content": prompt}
                 ]
             )
         else:
             response = self.client.chat.completions.create(
-                model = model if model is not None else self.config.get('model_name', 'gpt-4o-mini'),
+                model=resolved_model,
                 messages=[
                     {"role": "system", "content": sys_message},
                     {"role": "user", "content": prompt}
