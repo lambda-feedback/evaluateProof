@@ -60,43 +60,49 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     return types and that evaluation_function() is the main function used
     to output the evaluation response.
     """
-    feedback_prefix = ""
-
-    # get the number of submissions per student per response area
     try:
-        submissions_per_student_per_response_area = params['submission_context']['submissions_per_student_per_response_area']
-        if submissions_per_student_per_response_area >= max_submissions_per_student_per_response_area:
-            feedback = f"You have reached the maximum number of submissions per student for this question. Please try another one. If you believe this is an error, please contact your instructor."
-            return Result(is_correct=False, feedback=feedback)
-        else:
-            feedback_prefix = f"You have submitted {submissions_per_student_per_response_area+1} times. You have {max_submissions_per_student_per_response_area - submissions_per_student_per_response_area - 1} submissions remaining.\n\n"
+        feedback_prefix = ""
 
-    except KeyError:
-        # for the moment, pass in case this is not provided; otherwise we break test cases
-        pass
-    
-    # We assume that response in our case contains the student's answer as well as the question
-    # We don't assume that we get an exemplary answer, but if `answer` is a string, we provide it to the tutor
-
-    assert isinstance(response, str)
-    
-    if not isinstance(answer, str):
-        answer = f"No exemplary solution provided"
-    else:
+        # get the number of submissions per student per response area
         try:
-            # we expect `answer` to be a json string containing the question and an exemplary solution
-            json_answer = json.loads(answer)
-            question = json_answer["question"]
-            solution = json_answer["answer"]
-        except ValueError:
-            answer = f"No exemplary solution provided"
-    
-    try:
-        feedback = tutor.process_input(response, answer, model=params['model_name'])
-    except Exception as e:
-        feedback = f"An error occurred during the evaluation: {e}"
+            submissions_per_student_per_response_area = params['submission_context']['submissions_per_student_per_response_area']
+            if submissions_per_student_per_response_area >= max_submissions_per_student_per_response_area:
+                feedback = f"You have reached the maximum number of submissions per student for this question. Please try another one. If you believe this is an error, please contact your instructor."
+                return Result(is_correct=False, feedback=feedback)
+            else:
+                feedback_prefix = f"You have submitted {submissions_per_student_per_response_area+1} times. You have {max_submissions_per_student_per_response_area - submissions_per_student_per_response_area - 1} submissions remaining.\n\n"
 
-    feedback = feedback_prefix + feedback
-    return Result(feedback=feedback, is_correct=False)
+        except KeyError:
+            # for the moment, pass in case this is not provided; otherwise we break test cases
+            pass
+        
+        # We assume that response in our case contains the student's answer as well as the question
+        # We don't assume that we get an exemplary answer, but if `answer` is a string, we provide it to the tutor
+
+        # Validate response is a string instead of using assert
+        if not isinstance(response, str):
+            return Result(feedback="Invalid response format: expected string", is_correct=False)
+        
+        if not isinstance(answer, str):
+            answer = f"No exemplary solution provided"
+        else:
+            try:
+                # we expect `answer` to be a json string containing the question and an exemplary solution
+                json_answer = json.loads(answer)
+                question = json_answer["question"]
+                solution = json_answer["answer"]
+            except ValueError:
+                answer = f"No exemplary solution provided"
+        
+        try:
+            feedback = tutor.process_input(response, answer, model=params['model_name'])
+        except Exception as e:
+            feedback = f"An error occurred during the evaluation: {e}"
+
+        feedback = feedback_prefix + feedback
+        return Result(feedback=feedback, is_correct=False)
+    
+    except Exception as e:
+        return Result(feedback=f"Unexpected error during evaluation: {e}", is_correct=False)
 
 
