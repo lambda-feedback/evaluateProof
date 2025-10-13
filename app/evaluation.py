@@ -1,23 +1,86 @@
-from logging import error
-
-from sys import exit
-
-from typing import Any, TypedDict
+import logging
+import time
+from typing import Any, TypedDict, Optional
 
 from .math_tutor import MathTutor
 
 import json
 
-try:
-    tutor = MathTutor('config_tutor_test.json')
-except Exception as e:
-    error(f"An error occurred during the initialization of the tutor: {e}")
-    try:
-        tutor = MathTutor('app/config_tutor.json')
-    except Exception as e:
-        error(f"An error occurred during the initialization of the tutor: {e}")
-        # exit with suitable error code
-        exit(1)
+# Set up logging
+logger = logging.getLogger(__name__)
+
+# Global tutor instance (initialized lazily)
+_tutor: Optional[MathTutor] = None
+_tutor_init_error: Optional[str] = None
+
+
+def _get_tutor() -> MathTutor:
+    """
+    Lazy initialization of the MathTutor instance.
+    Tries multiple config paths with retries and caches the result.
+    Raises RuntimeError if initialization fails after all attempts.
+    """
+    global _tutor, _tutor_init_error
+    
+    # Return cached tutor if already initialized
+    if _tutor is not None:
+        return _tutor
+    
+    # Return cached error if already failed
+    if _tutor_init_error is not None:
+        raise RuntimeError(_tutor_init_error)
+    
+    # Configuration paths to try
+    config_paths = ['app/config_tutor_test.json', 'app/config_tutor.json']
+    max_retries = 3  # Total attempts per config
+    retry_delay = 1  # Seconds between retries
+    
+    all_errors = []
+    
+    for config_path in config_paths:
+        for attempt in range(max_retries):
+            try:
+                attempt_info = f"attempt {attempt + 1}/{max_retries}" if max_retries > 1 else "single attempt"
+                logger.info(f"Attempting to initialize MathTutor with config: {config_path} ({attempt_info})")
+                _tutor = MathTutor(config_path)
+                logger.info(f"Successfully initialized MathTutor with config: {config_path}")
+                return _tutor
+                
+            except FileNotFoundError as e:
+                error_msg = f"Config file not found: {config_path}"
+                logger.warning(error_msg)
+                all_errors.append(error_msg)
+                # Don't retry if file doesn't exist
+                break
+                
+            except ValueError as e:
+                error_msg = f"Configuration error with {config_path} (attempt {attempt + 1}): {str(e)}"
+                logger.warning(error_msg)
+                all_errors.append(error_msg)
+                
+                # Retry if we have attempts left
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    break
+                    
+            except Exception as e:
+                error_msg = f"Failed to initialize with {config_path} (attempt {attempt + 1}): {str(e)}"
+                logger.warning(error_msg)
+                all_errors.append(error_msg)
+                
+                # Retry if we have attempts left
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    break
+    
+    # All initialization attempts failed
+    _tutor_init_error = "Failed to initialize MathTutor after all retry attempts. Errors: " + "; ".join(all_errors)
+    logger.error(_tutor_init_error)
+    raise RuntimeError(_tutor_init_error)
         
 class Params(TypedDict):
     model_name: str
@@ -91,10 +154,17 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
         except ValueError:
             answer = f"No exemplary solution provided"
     
+    # Get the tutor instance (may raise RuntimeError for initialization failures)
+    # RuntimeError is allowed to propagate - the platform will handle it
+    tutor = _get_tutor()
+    
+    # Try to process the input
     try:
         feedback = tutor.process_input(response, answer, model=params['model_name'])
-    except Exception as e:
-        feedback = f"An error occurred during the evaluation: {e}"
+    except ValueError as e:
+        # Input validation error from MathTutor - return as feedback
+        logger.warning(f"Input validation error: {e}")
+        feedback = f"Unable to process your submission: {str(e)}"
 
     feedback = feedback_prefix + feedback
     return Result(feedback=feedback, is_correct=False)

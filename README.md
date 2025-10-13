@@ -1,12 +1,22 @@
-# Evaluation Function Template Repository
+# evaluateProof - Mathematics Proof Evaluation Function
 
-This template repository contains the boilerplate code needed in order to create an AWS Lambda function that can be written by any tutor to grade a response area in any way they like.
+This repository contains an AWS Lambda function for evaluating mathematical proofs and solutions submitted in natural language. The function uses LLMs and reasoning models to assess student work, breaking down the feedback generation process into structured steps defined by configurable directives.
 
-This version is specifically for python, however the ultimate goal is to make similar boilerplate repositories in any language, allowing tutors the freedom to code in what they feel most comfortable with.
+## Key Features
+
+- **Natural Language Proof Evaluation**: Evaluates mathematical proofs and solutions written in natural language
+- **Multi-Step Feedback Generation**: Uses configurable directive files to break down evaluation into structured steps (e.g., marking scheme creation, feedback generation)
+- **LLM and Reasoning Model Support**: Supports both standard chat models and reasoning models (o1, o3, o4, GPT-5 series) with automatic API handling
+- **Content Moderation**: Integrates OpenAI's omni-moderation-latest model to filter inappropriate submissions
+- **Math Content Validation**: Automatically verifies that submissions contain mathematical content
+- **Flexible Input Formats**: Handles both JSON-formatted and plain text submissions
+- **Configurable Evaluation**: Customizable marking schemes and feedback templates through JSON configuration files
 
 ## Table of Contents
-- [Evaluation Function Template Repository](#evaluation-function-template-repository)
+- [evaluateProof - Mathematics Proof Evaluation Function](#evaluateproof---mathematics-proof-evaluation-function)
+  - [Key Features](#key-features)
   - [Table of Contents](#table-of-contents)
+  - [MathTutor Implementation](#mathtutor-implementation)
   - [Repository Structure](#repository-structure)
   - [Usage](#usage)
     - [Getting Started](#getting-started)
@@ -16,6 +26,10 @@ This version is specifically for python, however the ultimate goal is to make si
     - [GitHub Actions](#github-actions)
   - [Pre-requisites](#pre-requisites)
   - [Contact](#contact)
+
+## MathTutor Implementation
+
+The core evaluation is implemented in the `MathTutor` class, which processes student submissions using LLMs and configurable directives to generate marking schemes and feedback. The system supports both standard chat models and reasoning models, with automatic content moderation and mathematics validation.
 
 ## Repository Structure
 
