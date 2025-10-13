@@ -31,7 +31,7 @@ def _get_tutor() -> MathTutor:
         raise RuntimeError(_tutor_init_error)
     
     # Configuration paths to try
-    config_paths = ['app/config_tutor_test.json', 'app/config_tutor.json']
+    config_paths = ['app/config_tutor_test.json', 'config_tutor.json', 'config_tutor_test.json']
     max_retries = 3  # Total attempts per config
     retry_delay = 1  # Seconds between retries
     
