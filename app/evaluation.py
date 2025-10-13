@@ -14,6 +14,7 @@ max_retries = 4
 # Get the directory of the current file to build relative paths
 current_dir = os.path.dirname(os.path.abspath(__file__))
 config_test_path = os.path.join(current_dir, 'config_tutor_test.json')
+config_path = os.path.join(current_dir, 'config_tutor.json')
 
 try:
     tutor = MathTutor(config_test_path)
@@ -22,7 +23,7 @@ except Exception as e:
     for _ in range(max_retries):
         sleep(1)
         try:
-            tutor = MathTutor(config_test_path)
+            tutor = MathTutor(config_path)
         except Exception as e:
             error(f"An error occurred during the initialization of the tutor: {e}")
     error(f"An error occurred during the initialization of the tutor: {e}")
