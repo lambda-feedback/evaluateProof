@@ -152,10 +152,12 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
             try:
                 # we expect `answer` to be a json string containing the question and an exemplary solution
                 json_answer = json.loads(answer)
-                question = json_answer["question"]
-                solution = json_answer["answer"]
-            except ValueError:
-                answer = f"No exemplary solution provided"
+                # If it's valid JSON, keep the original answer string
+                # The MathTutor will parse it again
+            except (ValueError, json.JSONDecodeError):
+                # Not JSON - could be a plain string exemplary solution or "No exemplary solution provided"
+                # Leave answer as is - MathTutor will handle it
+                pass
         
         # Get the tutor instance (may raise RuntimeError for initialization failures)
         # RuntimeError is allowed to propagate - the platform will handle it
