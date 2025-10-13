@@ -172,7 +172,12 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
         feedback = feedback_prefix + feedback
         return Result(feedback=feedback, is_correct=False)
     
+    except RuntimeError:
+        # Initialization errors - let them propagate to the platform
+        raise
     except Exception as e:
+        # Unexpected errors during evaluation - return as feedback
+        logger.exception(f"Unexpected error during evaluation: {e}")
         return Result(feedback=f"Unexpected error during evaluation: {e}", is_correct=False)
 
 
