@@ -16,6 +16,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 config_test_path = os.path.join(current_dir, 'config_tutor_test.json')
 config_path = os.path.join(current_dir, 'config_tutor.json')
 
+tutor = None
 try:
     tutor = MathTutor(config_test_path)
 except Exception as e:
@@ -24,10 +25,11 @@ except Exception as e:
         sleep(1)
         try:
             tutor = MathTutor(config_path)
+            break
         except Exception as e:
             error(f"An error occurred during the initialization of the tutor: {e}")
-    error(f"An error occurred during the initialization of the tutor: {e}")
-    raise RuntimeError("Failed to initialize MathTutor with either config file") from e
+    if tutor is None:
+        error(f"Failed to initialize MathTutor with either config file")
         
 class Params(TypedDict):
     model_name: str
