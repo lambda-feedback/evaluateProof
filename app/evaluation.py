@@ -1,23 +1,32 @@
 from logging import error
 
-from sys import exit
-
 from typing import Any, TypedDict
 
 from .math_tutor import MathTutor
 
+from time import sleep
+
 import json
 
+max_retries = 4
+
+config_paths = ['config_tutor.json', 'app/config_tutor.json', 'app/config_tutor_test.json']
+
 try:
-    tutor = MathTutor('config_tutor_test.json')
+    tutor = MathTutor('app/config_tutor_test.json')
 except Exception as e:
     error(f"An error occurred during the initialization of the tutor: {e}")
     try:
-        tutor = MathTutor('app/config_tutor.json')
+        tutor = MathTutor('app/config_tutor_test.json')
     except Exception as e:
+        for _ in range(max_retries):
+            sleep(1)
+            try:
+                tutor = MathTutor('config_tutor_test.json')
+            except Exception as e:
+                error(f"An error occurred during the initialization of the tutor: {e}")
         error(f"An error occurred during the initialization of the tutor: {e}")
-        # exit with suitable error code
-        exit(1)
+        raise RuntimeError("Failed to initialize MathTutor with either config file") from e
         
 class Params(TypedDict):
     model_name: str
