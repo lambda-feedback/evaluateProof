@@ -47,18 +47,6 @@ class TestEvaluationFunction(unittest.TestCase):
         )
         return "yes" in response_correctness.choices[0].message.content.lower()
 
-
-    def test_invalid_submission_format(self):
-        submission = "This is not a valid submission format"
-        exemplary_solution = 'Some solution'
-
-        result = evaluation_function(submission, exemplary_solution, self.params)
-        self.assertFalse(self.correctness_test(result))
-        self.assertIn("Submissions that are provided without an exemplary answer must be formatted as a question and answer separated by 'Answer:'.", result['feedback'])
-        
-        #with self.assertRaises(ValueError):
-        #    evaluation_function(submission, exemplary_solution, self.params)
-
     def test_correct_submission(self):
         submission = "What is 2+2?#Answer: The answer is 4."
         exemplary_solution = "Question: What is 2+2? Answer: The answer is 4."

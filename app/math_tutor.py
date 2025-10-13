@@ -54,17 +54,17 @@ class MathTutor:
         except ValueError:
             # in this case, we assume that the exemplary solution is a string that contains just the exemplary answer, or maybe nothing (i.e. `No exemplary solution provided`)
             # In this case, we try to split the submission into question and answer
-            try:
-                split_submission = submission.split("Answer:")
-                print(f"Split submission: {split_submission}")
-                if len(split_submission) > 1:
-                    question = split_submission[0]
-                    answer = "Answer:".join(split_submission[1:])
-                else:
-                    print("VALUE_ERROR")
-                    raise ValueError(f"Submissions that are provided without an exemplary answer must be formatted as a question and answer separated by 'Answer:'.")
-            except ValueError:
-                raise ValueError(f"Submissions that are provided without an exemplary answer must be formatted as a question and answer separated by 'Answer:'.")
+            split_submission = submission.split("Answer:")
+            print(f"Split submission: {split_submission}")
+            if len(split_submission) > 1:
+                question = split_submission[0]
+                answer = "Answer:".join(split_submission[1:])
+            else:
+                # If we can't split the submission, treat the entire submission as the question
+                # and set exemplary_solution to indicate none was provided
+                question = submission
+                answer = submission
+                exemplary_solution = "No exemplary solution provided"
         # Check submission length
         # if len(submission) > 5000:
         #    return "I apologize, but your submission is too long. Please limit your submission to 5000 characters or less.", "incorrect"
