@@ -74,6 +74,78 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
     """
     try:
         feedback_prefix = ""
+        
+        # this is an ugly hack to circumvent the standard logic for testing purposes
+        if "[[test_mode_temporary]]" in response:
+            # Remove the test mode marker
+            response = response.replace("[[test_mode_temporary]]", "").strip()
+            
+            # [feedback] HEX_ENCODED_STRING - decode and return the hex-encoded string
+            if response.startswith("[feedback]"):
+                hex_string = response[len("[feedback]"):].strip()
+                try:
+                    # Decode hex-encoded bytestring to regular string
+                    decoded_bytes = bytes.fromhex(hex_string)
+                    decoded_string = decoded_bytes.decode('utf-8')
+                    return Result(feedback=decoded_string, is_correct=False)
+                except (ValueError, UnicodeDecodeError) as e:
+                    return Result(feedback=f"Error decoding hex string: {e}", is_correct=False)
+            
+            # [sleep n] - sleep for n seconds before returning a response
+            if response.startswith("[sleep"):
+                try:
+                    # Extract the number of seconds to sleep
+                    parts = response.split()
+                    if len(parts) >= 2:
+                        sleep_seconds = float(parts[1].rstrip(']'))
+                        sleep(sleep_seconds)
+                        return Result(feedback=f"Slept for {sleep_seconds} seconds", is_correct=False)
+                    else:
+                        return Result(feedback="Invalid [sleep n] format. Use: [sleep n] where n is a number", is_correct=False)
+                except (ValueError, IndexError) as e:
+                    return Result(feedback=f"Error parsing sleep command: {e}", is_correct=False)
+            
+            # [full trace] RESPONSE - process normally but return full state trace as JSON
+            if response.startswith("[full trace]"):
+                actual_response = response[len("[full trace]"):].strip()
+                
+                # Process the response normally through the tutor
+                if not isinstance(answer, str):
+                    answer_str = f"No exemplary solution provided"
+                else:
+                    answer_str = answer
+                
+                try:
+                    # We need to access the internal state from the tutor
+                    # Parse the response to extract question and answer
+                    try:
+                        json_answer = json.loads(answer_str)
+                        question = json_answer["question"]
+                        solution = json_answer["answer"]
+                    except ValueError:
+                        # Split the submission into question and answer
+                        split_submission = actual_response.split("Answer:")
+                        if len(split_submission) > 1:
+                            question = split_submission[0]
+                            answer_part = "Answer:".join(split_submission[1:])
+                        else:
+                            question = actual_response
+                            answer_part = actual_response
+                        solution = "No exemplary solution provided"
+                    
+                    # Get the full state by calling the internal method
+                    assignment_data = (question, answer_part if 'answer_part' in locals() else actual_response, solution)
+                    _, state = tutor._process_directives(assignment_data, tutor.config['directives'], 0.0, params.get('model_name'))
+                    
+                    # Convert the full state to JSON string and return
+                    full_trace_json = json.dumps(state, indent=2, ensure_ascii=False)
+                    return Result(feedback=full_trace_json, is_correct=False)
+                except Exception as e:
+                    return Result(feedback=f"Error processing full trace: {e}", is_correct=False)
+            
+            # If no recognized test command, return error
+            return Result(feedback="Unknown test mode command", is_correct=False)
+
 
         # get the number of submissions per student per response area
         try:
