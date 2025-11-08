@@ -8,6 +8,7 @@ openai_api_key_var = "OPENAI_API_KEY"
 
 class MathTutor:
     def __init__(self, config_path: str, env_path: str = '.env', model=None):
+        self.config_path = config_path
         self.config = self._load_config(config_path)
         if model is not None:
             self.config['model_name'] = model
@@ -58,7 +59,7 @@ class MathTutor:
             if "workflow" in exemplary_solution_data:
                 workflow_path = exemplary_solution_data["workflow"]
                 # complete path to absolute path
-                workflow_full_path = os.path.join(os.path.dirname(config_path), workflow_path)
+                workflow_full_path = os.path.join(os.path.dirname(self.config_path), workflow_path)
                 print(f"Loading workflow from: {workflow_path}")
                 with open(workflow_path, 'r') as f:
                     workflow_config = json.load(f)
