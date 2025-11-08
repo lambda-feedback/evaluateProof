@@ -57,6 +57,8 @@ class MathTutor:
             # Check if there's a workflow field to override the default directives
             if "workflow" in exemplary_solution_data:
                 workflow_path = exemplary_solution_data["workflow"]
+                # complete path to absolute path
+                workflow_full_path = os.path.join(os.path.dirname(config_path), workflow_path)
                 print(f"Loading workflow from: {workflow_path}")
                 with open(workflow_path, 'r') as f:
                     workflow_config = json.load(f)
