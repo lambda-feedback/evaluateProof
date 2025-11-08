@@ -45,12 +45,23 @@ class MathTutor:
         print(f"Exemplary solution: {exemplary_solution}")
         print(f"Submission: {submission}")
 
+        workflow_override = None
+        
         try:
             # try to parse the exemplary solution as a json string
-            exemplary_solution = json.loads(exemplary_solution)
-            question = exemplary_solution["question"]
-            exemplary_solution = exemplary_solution["answer"]
+            exemplary_solution_data = json.loads(exemplary_solution)
+            question = exemplary_solution_data["question"]
+            exemplary_solution = exemplary_solution_data["answer"]
             answer = submission
+            
+            # Check if there's a workflow field to override the default directives
+            if "workflow" in exemplary_solution_data:
+                workflow_path = exemplary_solution_data["workflow"]
+                print(f"Loading workflow from: {workflow_path}")
+                with open(workflow_path, 'r') as f:
+                    workflow_config = json.load(f)
+                    workflow_override = workflow_config.get('directives')
+                    
         except ValueError:
             # in this case, we assume that the exemplary solution is a string that contains just the exemplary answer, or maybe nothing (i.e. `No exemplary solution provided`)
             # In this case, we try to split the submission into question and answer
@@ -98,7 +109,9 @@ class MathTutor:
         # self.tokens_processed += math_check_response.usage.total_tokens
         # self.tokens_processed += moderation_response.usage.total_tokens
         assignment_data = (question, answer, exemplary_solution)
-        _, state = self._process_directives(assignment_data, self.config['directives'], temperature, model)
+        # Use workflow override if specified, otherwise use default config directives
+        directives = workflow_override if workflow_override is not None else self.config['directives']
+        _, state = self._process_directives(assignment_data, directives, temperature, model)
 
         return state['feedback']
 
@@ -164,7 +177,8 @@ class MathTutor:
                 model=resolved_model,
                 messages=[
                     {"role": "user", "content": prompt}
-                ]
+                ],
+                reasoning_effort="low"
             )
         else:
             response = self.client.chat.completions.create(
