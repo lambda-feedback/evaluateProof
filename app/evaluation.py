@@ -105,6 +105,53 @@ def evaluation_function(response: Any, answer: Any, params: Params) -> Result:
                 except (ValueError, IndexError) as e:
                     return Result(feedback=f"Error parsing sleep command: {e}", is_correct=False)
             
+            # [tree] - show the directory tree of the application
+            if response.startswith("[tree]"):
+                try:
+                    # Get optional depth parameter (default to 3)
+                    depth_limit = 3
+                    parts = response.split()
+                    if len(parts) >= 2:
+                        try:
+                            depth_limit = int(parts[1].rstrip(']'))
+                        except ValueError:
+                            pass
+                    
+                    def build_tree(directory, prefix="", depth=0, max_depth=3):
+                        """Build a tree representation of the directory structure"""
+                        if depth > max_depth:
+                            return ""
+                        
+                        tree_str = ""
+                        try:
+                            items = sorted(os.listdir(directory))
+                            # Filter out common temporary and cache directories
+                            items = [item for item in items if not item.startswith('.') and item not in ['__pycache__', 'node_modules']]
+                            
+                            for i, item in enumerate(items):
+                                item_path = os.path.join(directory, item)
+                                is_last = i == len(items) - 1
+                                current_prefix = "└── " if is_last else "├── "
+                                next_prefix = prefix + ("    " if is_last else "│   ")
+                                
+                                tree_str += f"{prefix}{current_prefix}{item}\n"
+                                
+                                if os.path.isdir(item_path):
+                                    tree_str += build_tree(item_path, next_prefix, depth + 1, max_depth)
+                        except PermissionError:
+                            tree_str += f"{prefix}[Permission Denied]\n"
+                        
+                        return tree_str
+                    
+                    # Start from the current directory (app directory)
+                    app_dir = current_dir
+                    tree_output = f"{os.path.basename(app_dir)}/\n"
+                    tree_output += build_tree(app_dir, "", 0, depth_limit)
+                    
+                    return Result(feedback=tree_output, is_correct=False)
+                except Exception as e:
+                    return Result(feedback=f"Error generating directory tree: {e}", is_correct=False)
+            
             # [full trace] RESPONSE - process normally but return full state trace as JSON
             if response.startswith("[full trace]"):
                 actual_response = response[len("[full trace]"):].strip()
