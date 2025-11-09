@@ -13,6 +13,7 @@ COPY evaluation.py ./app/
 COPY evaluation_tests.py ./app/
 
 COPY config_tutor.json ./app/
+COPY config_tutor_test.json ./app/
 
 COPY math_tutor.py ./app/
 
