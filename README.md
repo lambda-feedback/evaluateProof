@@ -4,6 +4,10 @@ This template repository contains the boilerplate code needed in order to create
 
 This version is specifically for python, however the ultimate goal is to make similar boilerplate repositories in any language, allowing tutors the freedom to code in what they feel most comfortable with.
 
+
+## Deployment
+[![Create Release Request](https://img.shields.io/badge/Create%20Release%20Request-blue?style=for-the-badge)](https://github.com/lambda-feedback/evaluateProof/issues/new?template=release-request.yml)
+
 ## Table of Contents
 - [Evaluation Function Template Repository](#evaluation-function-template-repository)
   - [Table of Contents](#table-of-contents)
