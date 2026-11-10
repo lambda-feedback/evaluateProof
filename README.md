@@ -1,97 +1,142 @@
-# Evaluation Function Template Repository
+# evaluateProof
 
-This template repository contains the boilerplate code needed in order to create an AWS Lambda function that can be written by any tutor to grade a response area in any way they like.
+An AWS Lambda evaluation function for the [LambdaFeedback](https://lambdafeedback.com) platform that uses OpenAI's GPT models to provide automated feedback on undergraduate mathematics submissions.
 
-This version is specifically for python, however the ultimate goal is to make similar boilerplate repositories in any language, allowing tutors the freedom to code in what they feel most comfortable with.
+The function implements a two-stage LLM pipeline:
+1. **Mark scheme generation** — produces a 0–5 rubric specific to the question.
+2. **Feedback generation** — uses that rubric to give the student concise, actionable feedback.
+
+## Deployment
+[![Create Release Request](https://img.shields.io/badge/Create%20Release%20Request-blue?style=for-the-badge)](https://github.com/lambda-feedback/evaluateProof/issues/new?template=release-request.yml)
 
 ## Table of Contents
-- [Evaluation Function Template Repository](#evaluation-function-template-repository)
-  - [Table of Contents](#table-of-contents)
-  - [Repository Structure](#repository-structure)
-  - [Usage](#usage)
-    - [Getting Started](#getting-started)
-  - [How it works](#how-it-works)
-    - [Docker & Amazon Web Services (AWS)](#docker--amazon-web-services-aws)
-    - [Middleware Functions](#middleware-functions)
-    - [GitHub Actions](#github-actions)
-  - [Pre-requisites](#pre-requisites)
-  - [Contact](#contact)
+- [Deployment](#deployment)
+- [Repository Structure](#repository-structure)
+- [How It Works](#how-it-works)
+  - [Two-Stage Evaluation Pipeline](#two-stage-evaluation-pipeline)
+  - [Custom Workflows](#custom-workflows)
+  - [Submission Limits](#submission-limits)
+  - [Docker & AWS](#docker--aws)
+  - [GitHub Actions](#github-actions)
+- [Getting Started](#getting-started)
+- [Configuration](#configuration)
+- [Test / Debug Mode](#test--debug-mode)
+- [Pre-requisites](#pre-requisites)
 
 ## Repository Structure
 
-```bash
+```
 app/
-    __init__.py
-    evaluation.py # Script containing the main evaluation_function
-    preview.py # Script containing the preview_function
-    docs.md # Documentation page for this function (required)
-    evaluation_tests.py # Unittests for the main evaluation_function
-    preview_tests.py # Unittests for the preview_function
-    requirements.txt # list of packages needed for algorithm.py
-    Dockerfile # for building whole image to deploy to AWS
+    evaluation.py           # Entry point — delegates to MathTutor
+    math_tutor.py           # Two-stage LLM evaluation logic (OpenAI)
+    preview.py              # Preview function (returns response as-is)
+    config_tutor.json       # Production LLM directives
+    config_tutor_test.json  # Test LLM directives (loaded first on startup)
+    evaluation_tests.py     # Unit tests for evaluation_function
+    preview_tests.py        # Unit tests for preview_function
+    requirements.txt        # Python dependencies
+    Dockerfile              # Builds the deployable image
+    docs/
+        dev.md              # Developer-facing documentation
+        user.md             # Student/teacher-facing documentation
+    test_configs/           # Per-question workflow configs used in tests
 
 .github/
     workflows/
-        test-and-deploy.yml # Testing and deployment pipeline
+        test-lint.yml             # PRs: flake8 lint
+        staging-deploy.yml        # Push to main (or manual): lint → deploy to staging
+        production-deploy.yml     # Manual: deploy to production with a version bump
+        pre_production_tests.yml  # Manual: database tests against staging (not used here, LLM-backed)
+    ISSUE_TEMPLATE/
+        release-request.yml       # Form for requesting a production release
 
-config.json # Specify the name of the evaluation function in this file
-.gitignore
+config.json                 # Declares the function name: "evaluateProof"
 ```
 
-## Usage
+## How It Works
 
-### Getting Started
+### Two-Stage Evaluation Pipeline
 
-1. Clone this repository
-2. Change the name of the evaluation function in `config.json`
-3. The name must be unique. To view existing grading functions, go to:
+When a student submits an answer, `evaluation_function` in `evaluation.py` calls `MathTutor.process_input`, which runs two sequential LLM calls:
 
-   - [Staging API Gateway Integrations](https://eu-west-2.console.aws.amazon.com/apigateway/main/develop/integrations/attach?api=c1o0u8se7b&region=eu-west-2&routes=0xsoy4q)
-   - [Production API Gateway Integrations](https://eu-west-2.console.aws.amazon.com/apigateway/main/develop/integrations/attach?api=cttolq2oph&integration=qpbgva8&region=eu-west-2&routes=0xsoy4q)
+1. **Markscheme directive** (`config_tutor.json → directives.markscheme`): the model receives the question and generates a 0–5 marking rubric.
+2. **Feedback directive** (`config_tutor.json → directives.feedback`): the model receives the question, the student's solution, and the rubric, then returns feedback. The numeric grade is intentionally withheld to avoid misinterpretation.
 
-4. Merge commits into the default branch
-   - This will trigger the `test-and-deploy.yml` workflow, which will build the docker image, push it to a shared ECR repository, then call the backend `grading-function/ensure` route to build the necessary infrastructure to make the function available from the client app.
+The `answer` field passed from the platform is expected to be a JSON string:
 
-5. You are now ready to start developing your function:
-   
-   - Edit the `app/evaluation.py` file, which ultimately gets called when the function is given the `eval` command
-   - Edit the `app/preview.py` file, which is called when the function is passed the `preview` command.
-   - Edit the `app/evaluation_tests.py` and `app/preview_tests.py` files to add tests which get run:
-       - Every time you commit to this repo, before the image is built and deployed 
-       - Whenever the `healthcheck` command is supplied to the deployed function
-   - Edit the `app/docs.md` file to reflect your changes. This file is baked into the function's image, and is made available using the `docs` command. This feature is used to display this function's documentation on our [Documentation](https://lambda-feedback.github.io/Documentation/) website once it's been hooked up!
+```json
+{
+  "question": "Prove that ...",
+  "answer": "An exemplary solution ...",
+  "workflow": "/app/app/test_configs/config0.json"
+}
+```
 
----
+If no exemplary solution is available, the function falls back gracefully.
 
-## How it works
+### Custom Workflows
 
-The function is built on top of a custom base layer, [BaseEvaluationFunctionLayer](https://github.com/lambda-feedback/BaseEvalutionFunctionLayer), which tools, tests and schema checking relevant to all evaluation functions.
+The `answer` field may include a `"workflow"` key pointing to a JSON config file. This lets different questions use different LLM directive chains without redeploying the function. Workflow configs follow the same `{ "directives": { ... } }` schema as `config_tutor.json`.
 
-### Docker & Amazon Web Services (AWS)
+### Submission Limits
 
-The grading scripts are hosted AWS Lambda, using containers to run a docker image of the app. Docker is a popular tool in software development that allows programs to be hosted on any machine by bundling all its requirements and dependencies into a single file called an **image**.
+The function enforces a cap of **6 submissions per student per response area**. Once reached, further submissions return a message asking the student to contact their instructor. The current count is provided via `params.submission_context.submissions_per_student_per_response_area` and is displayed in the feedback prefix on each submission.
 
-Images are run within **containers** on AWS, which give us a lot of flexibility over what programming language and packages/libraries can be used. For more information on Docker, read this [introduction to containerisation](https://www.freecodecamp.org/news/a-beginner-friendly-introduction-to-containers-vms-and-docker-79a9e3e119b/). To learn more about AWS Lambda, click [here](https://geekflare.com/aws-lambda-for-beginners/).
+### Docker & AWS
 
-### Middleware Functions
-In order to run the algorithm and schema on AWS Lambda, some middleware functions have been provided to handle, validate and return the data so all you need to worry about is the evaluation script and testing.
-
-The code needed to build the image using all the middleware functions are available in the [BaseEvaluationFunctionLayer](https://github.com/lambda-feedback/BaseEvalutionFunctionLayer) repository.
+The function is packaged as a Docker image and deployed to AWS Lambda. It extends the shared [BaseEvaluationFunctionLayer](https://github.com/lambda-feedback/BaseEvalutionFunctionLayer) image (`main-3.12`, Python 3.12), which provides the request/response middleware and handler wiring. The deployed function reads `OPENAI_API_KEY` from its environment.
 
 ### GitHub Actions
-Whenever a commit is made to the GitHub repository, the new code will go through a pipeline, where it will be tested for syntax errors and code coverage. The pipeline used is called **GitHub Actions** and the scripts for these can be found in `.github/workflows/`.
 
-On top of that, when starting a new evaluation function, you will have to complete a set of unit test scripts, which not only make sure your code is reliable, but also helps you to build a _specification_ for how the code should function before you start programming.
+The workflows call the shared [evaluation-function-workflows](https://github.com/lambda-feedback/evaluation-function-workflows) `deploy.yml`:
 
-Once the code passes all these tests, it will then be uploaded to AWS and will be deployed and ready to go in only a few minutes.
+1. **Pull requests** (`test-lint.yml`): install dependencies and lint with `flake8`. The unit tests are not run in CI because they call the OpenAI API.
+2. **Staging** (`staging-deploy.yml`): runs on every push to `main`, or manually via *Run workflow*. It lints, then builds the image and deploys it to staging. To try a branch on staging before merging, run it manually and select that branch.
+3. **Production** (`production-deploy.yml`): run manually, choosing a patch/minor/major version bump. Use the **Create Release Request** button above to request a release. Database tests are disabled for this function because it is LLM-backed.
+
+## Getting Started
+
+1. Clone this repository.
+2. Edit `app/evaluation.py` and `app/math_tutor.py` to change evaluation behaviour.
+3. Update the LLM prompts in `app/config_tutor.json` to tune the mark scheme and feedback directives.
+4. Add or update tests in `app/evaluation_tests.py`, and run them locally (see below), since CI does not.
+5. Open a pull request. Optionally deploy the branch to staging (see [GitHub Actions](#github-actions)) and test it there.
+6. Merge to `main` to deploy to staging, then request a production release.
+
+The deploy secrets (`LAMBDA_CONTAINER_PIPELINE_AWS_ID`/`_SECRET`, `FUNCTION_ADMIN_API_KEY_STAGING`/`_PRODUCTION`, `GCP_DEPLOY`) are provided at the organisation level.
+
+To run tests locally (requires an OpenAI API key):
+
+```bash
+cd app
+pip install -r requirements.txt pytest
+OPENAI_API_KEY=sk-... pytest -v evaluation_tests.py preview_tests.py
+```
+
+## Configuration
+
+| File | Purpose |
+| --- | --- |
+| `config.json` | Sets `EvaluationFunctionName` to `"evaluateProof"` — used by CI to tag the Docker image. |
+| `app/config_tutor.json` | Production LLM directive chain (markscheme → feedback). |
+| `app/config_tutor_test.json` | Loaded first on Lambda cold-start; falls back to `config_tutor.json` if missing. |
+| `app/test_configs/` | Per-question workflow overrides referenced from the `answer` JSON. |
+
+## Test / Debug Mode
+
+Prefixing a response with `[[test_mode_temporary]]` activates debug mode, bypassing the normal evaluation flow. Supported commands:
+
+| Command | Behaviour |
+| --- | --- |
+| `[[test_mode_temporary]] [feedback] <hex>` | Decodes a hex-encoded string and returns it as feedback. |
+| `[[test_mode_temporary]] [sleep <n>]` | Sleeps for `n` seconds, then returns a confirmation message. |
+| `[[test_mode_temporary]] [tree] [<depth>]` | Returns a directory tree of the app, up to `depth` levels (default 3). |
+| `[[test_mode_temporary]] [full trace] <response>` | Runs the normal pipeline and returns the full internal state as JSON. |
 
 ## Pre-requisites
-Although all programming can be done through the GitHub interface, it is recommended you do this locally on your machine. To do this, you must have installed:
 
-- Python 3.12 or higher.
-
-- GitHub Desktop or the `git` CLI.
-
-- A code editor such as Atom, VS Code, or Sublime.
-
-Copy this template over by clicking **Use this template** button found in the repository on GitHub. Save it to the `lambda-feedback` Organisation.
+- Python 3.12+
+- An OpenAI API key with access to GPT-4 (or the model specified in your config).
+- Docker (for local image builds).
+- `git` or GitHub Desktop.
+- A code editor such as VS Code.
