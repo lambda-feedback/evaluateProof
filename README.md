@@ -6,7 +6,11 @@ The function implements a two-stage LLM pipeline:
 1. **Mark scheme generation** — produces a 0–5 rubric specific to the question.
 2. **Feedback generation** — uses that rubric to give the student concise, actionable feedback.
 
+## Deployment
+[![Create Release Request](https://img.shields.io/badge/Create%20Release%20Request-blue?style=for-the-badge)](https://github.com/lambda-feedback/evaluateProof/issues/new?template=release-request.yml)
+
 ## Table of Contents
+- [Deployment](#deployment)
 - [Repository Structure](#repository-structure)
 - [How It Works](#how-it-works)
   - [Two-Stage Evaluation Pipeline](#two-stage-evaluation-pipeline)
@@ -39,7 +43,12 @@ app/
 
 .github/
     workflows/
-        test-and-deploy.yml # CI: lint → test → deploy staging → deploy production
+        test-lint.yml             # PRs: flake8 lint
+        staging-deploy.yml        # Push to main (or manual): lint → deploy to staging
+        production-deploy.yml     # Manual: deploy to production with a version bump
+        pre_production_tests.yml  # Manual: database tests against staging (not used here, LLM-backed)
+    ISSUE_TEMPLATE/
+        release-request.yml       # Form for requesting a production release
 
 config.json                 # Declares the function name: "evaluateProof"
 ```
@@ -75,29 +84,28 @@ The function enforces a cap of **6 submissions per student per response area**. 
 
 ### Docker & AWS
 
-The function is packaged as a Docker image and deployed to AWS Lambda via Amazon ECR. It extends the shared [BaseEvaluationFunctionLayer](https://github.com/lambda-feedback/BaseEvalutionFunctionLayer) image, which provides the request/response middleware and handler wiring.
+The function is packaged as a Docker image and deployed to AWS Lambda. It extends the shared [BaseEvaluationFunctionLayer](https://github.com/lambda-feedback/BaseEvalutionFunctionLayer) image (`main-3.12`, Python 3.12), which provides the request/response middleware and handler wiring. The deployed function reads `OPENAI_API_KEY` from its environment.
 
 ### GitHub Actions
 
-Pushes to `main` trigger `.github/workflows/test-and-deploy.yml`:
+The workflows call the shared [evaluation-function-workflows](https://github.com/lambda-feedback/evaluation-function-workflows) `deploy.yml`:
 
-1. **Test** — lint with `flake8`, run `evaluation_tests.py` and `preview_tests.py` (requires `OPENAI_API_KEY` secret).
-2. **Deploy Staging** — build and push image to the staging ECR repository, then call the backend `grading-function/ensure` route.
-3. **Deploy Production** — same as staging but against the production ECR repository and API.
+1. **Pull requests** (`test-lint.yml`): install dependencies and lint with `flake8`. The unit tests are not run in CI because they call the OpenAI API.
+2. **Staging** (`staging-deploy.yml`): runs on every push to `main`, or manually via *Run workflow*. It lints, then builds the image and deploys it to staging. To try a branch on staging before merging, run it manually and select that branch.
+3. **Production** (`production-deploy.yml`): run manually, choosing a patch/minor/major version bump. Use the **Create Release Request** button above to request a release. Database tests are disabled for this function because it is LLM-backed.
 
 ## Getting Started
 
 1. Clone this repository.
-2. Ensure the following secrets are set in your GitHub repository settings:
-   - `OPENAI_API_KEY` — used by the evaluation pipeline and tests.
-   - `LAMBDA_CONTAINER_PIPELINE_AWS_ID` / `LAMBDA_CONTAINER_PIPELINE_AWS_SECRET` — AWS credentials for ECR.
-   - `FUNCTION_ADMIN_API_KEY` — LambdaFeedback backend API key.
-3. Edit `app/evaluation.py` and `app/math_tutor.py` to change evaluation behaviour.
-4. Update the LLM prompts in `app/config_tutor.json` to tune the mark scheme and feedback directives.
-5. Add or update tests in `app/evaluation_tests.py`.
-6. Push to `main` — the CI/CD pipeline handles the rest.
+2. Edit `app/evaluation.py` and `app/math_tutor.py` to change evaluation behaviour.
+3. Update the LLM prompts in `app/config_tutor.json` to tune the mark scheme and feedback directives.
+4. Add or update tests in `app/evaluation_tests.py`, and run them locally (see below), since CI does not.
+5. Open a pull request. Optionally deploy the branch to staging (see [GitHub Actions](#github-actions)) and test it there.
+6. Merge to `main` to deploy to staging, then request a production release.
 
-To run tests locally:
+The deploy secrets (`LAMBDA_CONTAINER_PIPELINE_AWS_ID`/`_SECRET`, `FUNCTION_ADMIN_API_KEY_STAGING`/`_PRODUCTION`, `GCP_DEPLOY`) are provided at the organisation level.
+
+To run tests locally (requires an OpenAI API key):
 
 ```bash
 cd app
@@ -127,7 +135,7 @@ Prefixing a response with `[[test_mode_temporary]]` activates debug mode, bypass
 
 ## Pre-requisites
 
-- Python 3.8+
+- Python 3.12+
 - An OpenAI API key with access to GPT-4 (or the model specified in your config).
 - Docker (for local image builds).
 - `git` or GitHub Desktop.
